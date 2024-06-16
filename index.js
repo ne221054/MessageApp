@@ -1,4 +1,3 @@
-
 const express = require('express');
 const Sequelize = require('sequelize');
 
@@ -21,6 +20,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
+app.set('views', __dirname + '/views');  // 追加: viewsディレクトリの設定
 app.use("/public", express.static(__dirname + "/public"));
 
 const Messages = sequelize.define('messages', {
@@ -36,7 +36,7 @@ const Messages = sequelize.define('messages', {
 sequelize.sync({ force: false, alter: true })
   .then(setupRoute)
   .catch((mes) => {
-    console.log("db connection error");
+    console.log("db connection error", mes);
   });
 
 let lastMessage = "";
@@ -44,37 +44,48 @@ let lastMessage = "";
 function setupRoute() {
   console.log("db connection succeeded");
   app.get('/', (req, res) => {
-    res.render('top.ejs');
+    console.log("Rendering top.ejs");
+    res.render('top');
   });
 
   app.get('/add', (req, res) => {
-    res.render('add.ejs', { lastMessage: lastMessage });
+    console.log("Rendering add.ejs");
+    res.render('add', { lastMessage: lastMessage });
   });
 
   app.post('/add', (req, res) => {
+    console.log("Received POST request to /add");
     let newMessage = new Messages({
       message: req.body.text
     });
     newMessage.save()
       .then((mes) => {
         lastMessage = req.body.text;
-        res.render('add.ejs', { lastMessage: lastMessage });
+        console.log("Message saved:", lastMessage);
+        res.render('add', { lastMessage: lastMessage });
       })
       .catch((mes) => {
+        console.log("Error saving message:", mes);
         res.send("error");
       });
   });
 
   app.get('/view', (req, res) => {
+    console.log("Fetching messages from database");
     Messages.findAll()
       .then((result) => {
         let allMessages = result.map((e) => {
           return e.message + " " + e.createdAt;
         });
-        res.render('view.ejs', { messages: allMessages });
+        console.log("Rendering view.ejs with messages:", allMessages);
+        res.render('view', { messages: allMessages });
+      })
+      .catch((err) => {
+        console.log("Error fetching messages:", err);
       });
   });
 }
 
-app.listen(process.env.PORT || PORT);
-
+app.listen(process.env.PORT || PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
