@@ -78,27 +78,3 @@ function setupRoute() {
 
 app.listen(process.env.PORT || PORT);
 
-
-app.get('/search', (req, res) => {
-  res.render('search.ejs', { results: [] });
-});
-
-app.post('/search', (req, res) => {
-  const Op = Sequelize.Op;
-  Messages.findAll({
-    where: {
-      message: {
-        [Op.regexp]: req.body.searchText
-      }
-    }
-  })
-    .then((result) => {
-      let searchResults = result.map((e) => {
-        return e.message + " " + e.createdAt;
-      });
-      res.render('search.ejs', { results: searchResults })
-    })
-    .catch((mes) => {
-      console.log(mes);
-    });
-});
